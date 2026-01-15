@@ -1,6 +1,8 @@
 import streamlit as st
 import tempfile
 import os
+import time
+import pandas as pd
 
 from processing.parser import parse_resume, parse_text_file, extract_required_experience
 from processing.cleaner import clean_text
@@ -16,15 +18,8 @@ from recommendations.advisor import (
 )
 
 from reports.pdf_generator import generate_pdf_report_bytes
-import time
 from utils.logger import log_time
-
-
-if "report_ready" not in st.session_state:
-    st.session_state.report_ready = False
-
-if "report_file" not in st.session_state:
-    st.session_state.report_file = None
+from utils.identity import extract_candidate_identity
 
 
 
@@ -70,6 +65,7 @@ if st.button("Analyze Match"):
 
             try:
                 start_time = time.time()
+
                 # -------------------------
                 # Resume pipeline
                 # -------------------------
@@ -131,11 +127,31 @@ if st.button("Analyze Match"):
                 # -------------------------
                 st.success("Analysis Complete!")
 
+                # -------------------------
+                # Candidate identity
+                # -------------------------
+                candidate_name = extract_candidate_identity(raw_resume)
+
+                # -------- Results Table --------
+                st.subheader("📊 Results Table")
+
+                result_row = {
+                    "Candidate": candidate_name,
+                    "Final Match %": round(final_score_result["final_match_percent"], 2),
+                    "Matched Skills": ", ".join(skill_result["matched_skills"]) if skill_result["matched_skills"] else "None",
+                    "Missing Skills": ", ".join(skill_result["missing_skills"]) if skill_result["missing_skills"] else "None"
+                }
+
+                df = pd.DataFrame([result_row])
+                st.dataframe(df, use_container_width=True)
+
+                # -------- Metrics --------
                 st.subheader("🔍 Match Overview")
-                st.metric("Final Match Score", f"{final_score_result['final_match_percent']}%")
-                st.metric("TF-IDF Similarity", f"{tfidf_score}%")
+                st.metric("Final Match Score", f"{final_score_result['final_match_percent']:.2f}%")
+                st.metric("TF-IDF Similarity", f"{tfidf_score:.2f}%")
                 st.metric("Semantic Similarity", f"{semantic_score:.2f}%")
 
+                # -------- Skills --------
                 st.subheader("✅ Matched Skills")
                 if skill_result["matched_skills"]:
                     st.write(", ".join(skill_result["matched_skills"]))
@@ -148,6 +164,7 @@ if st.button("Analyze Match"):
                 else:
                     st.write("No missing skills. Great fit!")
 
+                # -------- Recommendations --------
                 st.subheader("💡 Recommendations")
                 if suggestions:
                     for i, s in enumerate(suggestions, 1):
@@ -155,27 +172,24 @@ if st.button("Analyze Match"):
                 else:
                     st.write("Your resume already matches this role well!")
 
+                # -------- Extracted Profile --------
                 st.subheader("🧾 Extracted Profile")
 
-                # ---- Skills ----
                 if profile["skills"]:
                     st.write(f"**Skills**: {', '.join(profile['skills'])}")
                 else:
                     st.write("**Skills**: Not mentioned")
 
-                # ---- Experience ----
                 if profile["experience_years"] > 0:
                     st.write(f"**Experience**: {profile['experience_years']} years")
                 else:
                     st.write("**Experience**: Fresher / Not mentioned")
 
-                # ---- Education ----
                 if profile["education"]:
                     st.write(f"**Education**: {', '.join(profile['education']).upper()}")
                 else:
                     st.write("**Education**: Not specified")
 
-                # ---- Job Titles ----
                 if profile["job_titles"]:
                     st.write(f"**Job Titles**: {', '.join(profile['job_titles'])}")
                 else:
@@ -193,8 +207,6 @@ if st.button("Analyze Match"):
 
                 pdf_bytes = generate_pdf_report_bytes(report_data)
 
-                st.write("PDF size:", len(pdf_bytes))  # debug line
-
                 st.download_button(
                     label="⬇️ Download PDF Report",
                     data=pdf_bytes,
@@ -202,6 +214,9 @@ if st.button("Analyze Match"):
                     mime="application/pdf"
                 )
 
+                # -------------------------
+                # Logging time
+                # -------------------------
                 total_time = log_time(start_time, "Resume Screening")
                 st.caption(f"⏱ Processing time: {total_time}s")
 
