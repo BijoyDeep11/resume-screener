@@ -6,11 +6,26 @@ nlp = spacy.load("en_core_web_sm")
 
 # A starter skill list (we'll grow this later)
 SKILLS = [
-    "python", "java", "c++", "javascript", "react", "node",
-    "django", "flask", "sql", "mongodb", "html", "css",
-    "machine learning", "deep learning", "nlp",
-    "git", "docker", "linux", "aws"
+    # Programming
+    "python", "java", "c", "c++", "javascript",
+
+    # Web
+    "html", "css", "responsive web design",
+    "react", "node", "express",
+
+    # Backend
+    "django", "flask", "rest api",
+
+    # Databases
+    "sql", "mysql", "postgresql", "mongodb", "databases",
+
+    # DevOps / Cloud
+    "docker", "aws", "linux", "git",
+
+    # Data / AI
+    "machine learning", "deep learning", "nlp"
 ]
+
 
 matcher = PhraseMatcher(nlp.vocab, attr="LOWER")
 patterns = [nlp(skill) for skill in SKILLS]

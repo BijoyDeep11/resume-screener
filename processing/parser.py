@@ -34,3 +34,7 @@ def parse_resume(file_path):
         return parse_docx(file_path)
     else:
         raise ValueError("Unsupported file format. Use PDF or DOCX.")
+
+def parse_text_file(file_path):
+    with open(file_path, "r", encoding="utf-8") as f:
+        return f.read()
