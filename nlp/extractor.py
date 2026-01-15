@@ -1,5 +1,5 @@
 from typing import Dict
-from nlp.skills import extract_skills, extract_experience_years, extract_degrees
+from nlp.skills import extract_skills, extract_experience_years, extract_degrees,  extract_job_titles
 
 
 def split_into_sections(text: str) -> Dict[str, str]:
@@ -56,11 +56,13 @@ def build_profile(sections: Dict[str, str]) -> Dict:
     skills = extract_skills(combined_text)
     exp_years = extract_experience_years(combined_text)
     degrees = extract_degrees(combined_text)
+    titles = extract_job_titles(combined_text)
 
     profile = {
         "skills": skills,
         "experience_years": exp_years,
-        "education": degrees
+        "education": degrees,
+        "job_titles": titles 
     }
 
     return profile

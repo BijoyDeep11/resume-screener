@@ -4,6 +4,24 @@ from spacy.matcher import PhraseMatcher
 
 nlp = spacy.load("en_core_web_sm")
 
+
+JOB_TITLES = [
+    "software engineer",
+    "backend developer",
+    "frontend developer",
+    "full stack developer",
+    "data analyst",
+    "data scientist",
+    "machine learning engineer",
+    "ai engineer",
+    "web developer",
+    "intern",
+    "trainee",
+    "campus ambassador",
+    "project intern"
+]
+
+
 # A starter skill list (we'll grow this later)
 SKILLS = [
     # Programming
@@ -70,3 +88,13 @@ def extract_degrees(text: str):
         degrees.append("msc")
 
     return degrees
+
+def extract_job_titles(text: str):
+    found = set()
+    text_lower = text.lower()
+
+    for title in JOB_TITLES:
+        if title in text_lower:
+            found.add(title)
+
+    return list(found)

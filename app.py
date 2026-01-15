@@ -34,3 +34,6 @@ if __name__ == "__main__":
     print("\n====== RECOMMENDATIONS ======")
     for i, s in enumerate(suggestions, 1):
         print(f"{i}. {s}")
+
+    print("\n====== EXTRACTED PROFILE ======")
+    print(profile)
