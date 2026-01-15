@@ -29,13 +29,18 @@ from utils.highlighter import find_skill_context
 st.set_page_config(page_title="AI Resume Screener", layout="centered")
 
 st.title("📄 AI-Powered Resume Screener")
-st.write("Upload a resume and a job description to see how well they match.")
+st.write("Upload resumes and a job description to see how well they match.")
 
 
 # -------------------------
 # Upload Section
 # -------------------------
-resume_file = st.file_uploader("Upload Resume (PDF or DOCX)", type=["pdf", "docx"])
+resume_files = st.file_uploader(
+    "Upload Resume(s) (PDF or DOCX)",
+    type=["pdf", "docx"],
+    accept_multiple_files=True
+)
+
 jd_file = st.file_uploader("Upload Job Description (TXT)", type=["txt"])
 
 
@@ -44,20 +49,14 @@ jd_file = st.file_uploader("Upload Job Description (TXT)", type=["txt"])
 # -------------------------
 if st.button("Analyze Match"):
 
-    if not resume_file or not jd_file:
-        st.warning("Please upload both Resume and Job Description.")
+    if not resume_files or not jd_file:
+        st.warning("Please upload at least one Resume and the Job Description.")
     else:
         with st.spinner("Analyzing..."):
 
             # -------------------------
-            # Save uploaded files (KEEP EXTENSION!)
+            # Save JD file
             # -------------------------
-            resume_suffix = os.path.splitext(resume_file.name)[1]
-
-            with tempfile.NamedTemporaryFile(delete=False, suffix=resume_suffix) as tmp_resume:
-                tmp_resume.write(resume_file.read())
-                resume_path = tmp_resume.name
-
             with tempfile.NamedTemporaryFile(delete=False, mode="w+", encoding="utf-8") as tmp_jd:
                 jd_text = jd_file.read().decode("utf-8")
                 tmp_jd.write(jd_text)
@@ -67,177 +66,230 @@ if st.button("Analyze Match"):
                 start_time = time.time()
 
                 # -------------------------
-                # Resume pipeline
-                # -------------------------
-                raw_resume = parse_resume(resume_path)
-                clean_resume = clean_text(raw_resume)
-                sections = split_into_sections(clean_resume)
-                profile = build_profile(sections)
-
-                # -------------------------
-                # JD pipeline
+                # JD pipeline (once)
                 # -------------------------
                 jd_raw = parse_text_file(jd_path)
                 clean_jd = clean_text(jd_raw)
 
-                # -------------------------
-                # Similarity
-                # -------------------------
-                tfidf_score = compute_similarity(clean_resume, clean_jd)
-                semantic_score = compute_semantic_similarity(clean_resume, clean_jd)
+                results = []
+                top_candidate_data = None   # used for PDF when only one resume
 
                 # -------------------------
-                # Skill matching
+                # Loop over resumes
                 # -------------------------
-                skill_result = calculate_match_score(profile, clean_jd)
+                for resume_file in resume_files:
+
+                    resume_suffix = os.path.splitext(resume_file.name)[1]
+
+                    with tempfile.NamedTemporaryFile(delete=False, suffix=resume_suffix) as tmp_resume:
+                        tmp_resume.write(resume_file.read())
+                        resume_path = tmp_resume.name
+
+                    try:
+                        # -------------------------
+                        # Resume pipeline
+                        # -------------------------
+                        raw_resume = parse_resume(resume_path)
+                        clean_resume = clean_text(raw_resume)
+                        sections = split_into_sections(clean_resume)
+                        profile = build_profile(sections)
+
+                        # -------------------------
+                        # Similarity
+                        # -------------------------
+                        tfidf_score = compute_similarity(clean_resume, clean_jd)
+                        semantic_score = compute_semantic_similarity(clean_resume, clean_jd)
+
+                        # -------------------------
+                        # Skill matching
+                        # -------------------------
+                        skill_result = calculate_match_score(profile, clean_jd)
+
+                        # -------------------------
+                        # Skill context
+                        # -------------------------
+                        skill_context = find_skill_context(
+                            clean_resume,
+                            skill_result["matched_skills"]
+                        )
+
+                        # -------------------------
+                        # Final weighted score
+                        # -------------------------
+                        required_exp = extract_required_experience(clean_jd)
+                        has_degree = "btech" in profile.get("education", [])
+
+                        final_score_result = compute_final_score(
+                            skill_match_percent=skill_result["skill_match_percent"],
+                            semantic_similarity=semantic_score,
+                            experience_years=profile["experience_years"],
+                            required_experience=required_exp,
+                            has_required_degree=has_degree,
+                            keyword_similarity=tfidf_score
+                        )
+
+                        # -------------------------
+                        # Candidate identity
+                        # -------------------------
+                        candidate_name = extract_candidate_identity(raw_resume)
+
+                        # -------------------------
+                        # Store result
+                        # -------------------------
+                        row = {
+                            "Candidate": candidate_name,
+                            "Final Match %": round(final_score_result["final_match_percent"], 2),
+                            "Matched Skills": ", ".join(skill_result["matched_skills"]) if skill_result["matched_skills"] else "None",
+                            "Missing Skills": ", ".join(skill_result["missing_skills"]) if skill_result["missing_skills"] else "None",
+                        }
+
+                        results.append(row)
+
+                        # Save data for PDF when only one resume is uploaded
+                        if len(resume_files) == 1:
+                            under_emphasized = find_under_emphasized_strengths(
+                                resume_text=clean_resume,
+                                jd_skills=skill_result["jd_skills"]
+                            )
+
+                            suggestions = generate_recommendations(
+                                skill_result,
+                                under_emphasized=under_emphasized
+                            )
+
+                            top_candidate_data = {
+                                "final_score": final_score_result["final_match_percent"],
+                                "matched_skills": skill_result["matched_skills"],
+                                "missing_skills": skill_result["missing_skills"],
+                                "recommendations": suggestions,
+                                "profile": profile,
+                                "skill_context": skill_context,
+                                "tfidf": tfidf_score,
+                                "semantic": semantic_score,
+                                "candidate_name": candidate_name
+                            }
+
+                    finally:
+                        if os.path.exists(resume_path):
+                            os.remove(resume_path)
 
                 # -------------------------
-                # Skill context in resume
+                # Rank results
                 # -------------------------
-                skill_context = find_skill_context(
-                    clean_resume,
-                    skill_result["matched_skills"]
-                )
-
-                # -------------------------
-                # Final weighted score
-                # -------------------------
-                required_exp = extract_required_experience(clean_jd)
-                has_degree = "btech" in profile.get("education", [])
-
-                final_score_result = compute_final_score(
-                    skill_match_percent=skill_result["skill_match_percent"],
-                    semantic_similarity=semantic_score,
-                    experience_years=profile["experience_years"],
-                    required_experience=required_exp,
-                    has_required_degree=has_degree,
-                    keyword_similarity=tfidf_score
-                )
-
-                # -------------------------
-                # Under-emphasized strengths
-                # -------------------------
-                under_emphasized = find_under_emphasized_strengths(
-                    resume_text=clean_resume,
-                    jd_skills=skill_result["jd_skills"]
-                )
-
-                # -------------------------
-                # Recommendations
-                # -------------------------
-                suggestions = generate_recommendations(
-                    skill_result,
-                    under_emphasized=under_emphasized
-                )
+                results = sorted(results, key=lambda x: x["Final Match %"], reverse=True)
+                for i, r in enumerate(results, start=1):
+                    r["Rank"] = i
 
                 # -------------------------
                 # UI OUTPUT
                 # -------------------------
                 st.success("Analysis Complete!")
 
-                # -------------------------
-                # Candidate identity
-                # -------------------------
-                candidate_name = extract_candidate_identity(raw_resume)
+                # -------- Ranked Table --------
+                st.subheader("🏆 Ranked Candidates")
 
-                # -------- Results Table --------
-                st.subheader("📊 Results Table")
-
-                result_row = {
-                    "Candidate": candidate_name,
-                    "Final Match %": round(final_score_result["final_match_percent"], 2),
-                    "Matched Skills": ", ".join(skill_result["matched_skills"]) if skill_result["matched_skills"] else "None",
-                    "Missing Skills": ", ".join(skill_result["missing_skills"]) if skill_result["missing_skills"] else "None"
-                }
-
-                df = pd.DataFrame([result_row])
+                df = pd.DataFrame(results)
+                df = df[["Rank", "Candidate", "Final Match %", "Matched Skills", "Missing Skills"]]
                 st.dataframe(df, use_container_width=True)
 
-                # -------- Metrics --------
-                st.subheader("🔍 Match Overview")
-                st.metric("Final Match Score", f"{final_score_result['final_match_percent']:.2f}%")
-                st.metric("TF-IDF Similarity", f"{tfidf_score:.2f}%")
-                st.metric("Semantic Similarity", f"{semantic_score:.2f}%")
+                # -------------------------
+                # Detailed view (only when 1 resume)
+                # -------------------------
+                if len(resume_files) == 1 and top_candidate_data:
 
-                # -------- Skills --------
-                # -------- Matched Skills --------
-                st.subheader("✅ Matched Skills")
-                if skill_result["matched_skills"]:
-                    st.write(", ".join(skill_result["matched_skills"]))
-                else:
-                    st.write("No matching skills found.")
+                    st.divider()
+                    st.subheader("🔍 Detailed View")
 
-                # -------- Skill context --------
-                st.subheader("📍 Skill Hits in Context")
+                    st.metric(
+                        "Final Match Score",
+                        f"{top_candidate_data['final_score']:.2f}%"
+                    )
 
-                if skill_context:
-                    for snippet, data in skill_context.items():
-                        skills_list = ", ".join([s.title() for s in data["skills"]])
-                        st.markdown(f"**Skills found here:** {skills_list}")
-                        st.markdown(
-                            f"<div style='color:#e5e7eb; font-weight:500;'>{data['highlighted']}</div>",
-                            unsafe_allow_html=True
-                        )
-                else:
-                    st.write("No skill occurrences found in resume text.")
+                    st.metric(
+                        "TF-IDF Similarity",
+                        f"{top_candidate_data['tfidf']:.2f}%"
+                    )
 
+                    st.metric(
+                        "Semantic Similarity",
+                        f"{top_candidate_data['semantic']:.2f}%"
+                    )
 
+                    # -------- Skill Context --------
+                    st.subheader("📍 Skill Hits in Context")
 
-                st.subheader("❌ Missing Skills")
-                if skill_result["missing_skills"]:
-                    st.write(", ".join(skill_result["missing_skills"]))
-                else:
-                    st.write("No missing skills. Great fit!")
+                    if top_candidate_data["skill_context"]:
+                        for snippet, data in top_candidate_data["skill_context"].items():
+                            skills_list = ", ".join([s.title() for s in data["skills"]])
+                            st.markdown(f"**Skills found here:** {skills_list}")
+                            st.markdown(
+                                f"<div style='color:#e5e7eb; font-weight:500;'>{data['highlighted']}</div>",
+                                unsafe_allow_html=True
+                            )
+                    else:
+                        st.write("No skill occurrences found in resume text.")
 
-                # -------- Recommendations --------
-                st.subheader("💡 Recommendations")
-                if suggestions:
-                    for i, s in enumerate(suggestions, 1):
+                    # -------- Extracted Profile --------
+                    profile = top_candidate_data["profile"]
+
+                    st.subheader("🧾 Extracted Profile")
+
+                    st.write(f"**Name**: {top_candidate_data['candidate_name']}")
+
+                    st.write(
+                        f"**Skills**: {', '.join(profile['skills'])}"
+                        if profile["skills"]
+                        else "**Skills**: Not mentioned"
+                    )
+
+                    st.caption("(Skills are context-validated to avoid ambiguity.)")
+
+                    if profile["experience_years"] > 0:
+                        st.write(f"**Experience**: {profile['experience_years']} years")
+                    else:
+                        st.write("**Experience**: Fresher / Not mentioned")
+
+                    st.write(
+                        f"**Education**: {', '.join(profile['education']).upper()}"
+                        if profile["education"]
+                        else "**Education**: Not specified"
+                    )
+
+                    st.write(
+                        f"**Job Titles**: {', '.join(profile['job_titles'])}"
+                        if profile["job_titles"]
+                        else "**Job Titles**: Not specified in resume"
+                    )
+
+                    # -------- Recommendations --------
+                    st.subheader("💡 Recommendations")
+                    for i, s in enumerate(top_candidate_data["recommendations"], 1):
                         st.write(f"{i}. {s}")
+
+                    # -------------------------
+                    # PDF Report
+                    # -------------------------
+                    report_data = {
+                        "final_score": top_candidate_data["final_score"],
+                        "matched_skills": top_candidate_data["matched_skills"],
+                        "missing_skills": top_candidate_data["missing_skills"],
+                        "recommendations": top_candidate_data["recommendations"]
+                    }
+
+                    pdf_bytes = generate_pdf_report_bytes(report_data)
+
+                    st.download_button(
+                        label="⬇️ Download PDF Report",
+                        data=pdf_bytes,
+                        file_name="resume_screening_report.pdf",
+                        mime="application/pdf"
+                    )
+
                 else:
-                    st.write("Your resume already matches this role well!")
-
-                # -------- Extracted Profile --------
-                st.subheader("🧾 Extracted Profile")
-
-                if profile["skills"]:
-                    st.write(f"**Skills**: {', '.join(profile['skills'])}")
-                else:
-                    st.write("**Skills**: Not mentioned")
-
-                if profile["experience_years"] > 0:
-                    st.write(f"**Experience**: {profile['experience_years']} years")
-                else:
-                    st.write("**Experience**: Fresher / Not mentioned")
-
-                if profile["education"]:
-                    st.write(f"**Education**: {', '.join(profile['education']).upper()}")
-                else:
-                    st.write("**Education**: Not specified")
-
-                if profile["job_titles"]:
-                    st.write(f"**Job Titles**: {', '.join(profile['job_titles'])}")
-                else:
-                    st.write("**Job Titles**: Not specified in resume")
-
-                # -------------------------
-                # PDF Report
-                # -------------------------
-                report_data = {
-                    "final_score": final_score_result["final_match_percent"],
-                    "matched_skills": skill_result["matched_skills"],
-                    "missing_skills": skill_result["missing_skills"],
-                    "recommendations": suggestions
-                }
-
-                pdf_bytes = generate_pdf_report_bytes(report_data)
-
-                st.download_button(
-                    label="⬇️ Download PDF Report",
-                    data=pdf_bytes,
-                    file_name="resume_screening_report.pdf",
-                    mime="application/pdf"
-                )
+                    st.info(
+                        "PDF report and detailed context view are available when "
+                        "you upload a single resume."
+                    )
 
                 # -------------------------
                 # Logging time
@@ -249,10 +301,5 @@ if st.button("Analyze Match"):
                 st.error(f"Something went wrong: {e}")
 
             finally:
-                # -------------------------
-                # Cleanup temp files
-                # -------------------------
-                if os.path.exists(resume_path):
-                    os.remove(resume_path)
                 if os.path.exists(jd_path):
                     os.remove(jd_path)

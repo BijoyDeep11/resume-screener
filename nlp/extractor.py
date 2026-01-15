@@ -5,6 +5,7 @@ from nlp.skills import (
     extract_degrees,
     extract_job_titles
 )
+from nlp.disambiguation import disambiguate_skills
 
 
 def split_into_sections(text: str) -> Dict[str, str]:
@@ -58,10 +59,18 @@ def build_profile(sections: Dict[str, str]) -> Dict:
     # Combine all text for global extraction
     combined_text = " ".join(sections.values()).lower()
 
-    skills = extract_skills(combined_text)
+    # -------------------------
+    # Raw extraction
+    # -------------------------
+    raw_skills = extract_skills(combined_text)
     exp_years = extract_experience_years(combined_text)
     degrees = extract_degrees(combined_text)
     titles = extract_job_titles(combined_text)
+
+    # -------------------------
+    # Named Entity Disambiguation
+    # -------------------------
+    skills = disambiguate_skills(raw_skills, combined_text)
 
     profile = {
         "skills": skills,
