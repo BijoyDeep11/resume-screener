@@ -1,6 +1,7 @@
 from PyPDF2 import PdfReader
 from docx import Document
 import os
+import re
 
 def parse_pdf(file_path):
     text = ""
@@ -38,3 +39,13 @@ def parse_resume(file_path):
 def parse_text_file(file_path):
     with open(file_path, "r", encoding="utf-8") as f:
         return f.read()
+
+def extract_required_experience(jd_text: str) -> int:
+    """
+    Extracts required experience from JD text.
+    Example: '2 years experience' → 2
+    """
+    matches = re.findall(r"(\d+)\+?\s+years?", jd_text.lower())
+    if matches:
+        return max(int(x) for x in matches)
+    return 0

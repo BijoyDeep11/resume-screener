@@ -1,8 +1,9 @@
-def generate_recommendations(match_result: dict) -> list:
+def generate_recommendations(match_result: dict, under_emphasized: list = None) -> list:
     missing = match_result.get("missing_skills", [])
 
     suggestions = []
 
+    # --- Missing skill advice ---
     for skill in missing:
         if skill in ["django", "flask"]:
             suggestions.append(
@@ -25,5 +26,28 @@ def generate_recommendations(match_result: dict) -> list:
                 f"Consider adding experience or coursework related to {skill}."
             )
 
-    # Limit to top 5 suggestions
+    # --- Under-emphasized strengths advice ---
+    if under_emphasized:
+        for skill in under_emphasized:
+            suggestions.append(
+                f"You already have experience with {skill}. Emphasize it more in your projects or achievements."
+            )
+
     return suggestions[:5]
+
+
+def find_under_emphasized_strengths(resume_text: str, jd_skills: list):
+    """
+    Finds skills that exist in resume but are mentioned only once,
+    while being important in the JD.
+    """
+    text = resume_text.lower()
+    strengths = []
+
+    for skill in jd_skills:
+        count = text.count(skill.lower())
+        if count == 1:
+            strengths.append(skill)
+
+    return strengths
+
