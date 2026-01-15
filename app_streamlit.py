@@ -16,6 +16,9 @@ from recommendations.advisor import (
 )
 
 from reports.pdf_generator import generate_pdf_report_bytes
+import time
+from utils.logger import log_time
+
 
 if "report_ready" not in st.session_state:
     st.session_state.report_ready = False
@@ -66,6 +69,7 @@ if st.button("Analyze Match"):
                 jd_path = tmp_jd.name
 
             try:
+                start_time = time.time()
                 # -------------------------
                 # Resume pipeline
                 # -------------------------
@@ -176,6 +180,8 @@ if st.button("Analyze Match"):
                     mime="application/pdf"
                 )
 
+                total_time = log_time(start_time, "Resume Screening")
+                st.caption(f"⏱ Processing time: {total_time}s")
 
             except Exception as e:
                 st.error(f"Something went wrong: {e}")
