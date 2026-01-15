@@ -4,6 +4,7 @@ from nlp.extractor import split_into_sections, build_profile
 from scoring.similarity import compute_similarity
 from scoring.engine import calculate_match_score
 from recommendations.advisor import generate_recommendations
+from scoring.similarity import compute_semantic_similarity
 
 if __name__ == "__main__":
     resume_path = "data/resumes/sample_resume.pdf"
@@ -25,8 +26,12 @@ if __name__ == "__main__":
     # Skill matching
     skill_result = calculate_match_score(profile, clean_jd)
 
+    semantic_score = compute_semantic_similarity(clean_resume, clean_jd)
+
+
     print("\n====== MATCH RESULTS ======")
-    print(f"Overall Similarity: {similarity_score}%")
+    print(f"TF-IDF Similarity: {similarity_score}%")
+    print(f"Semantic Similarity: {semantic_score}%")
     print("Skill Match:", skill_result)
 
     suggestions = generate_recommendations(skill_result)
