@@ -5,6 +5,18 @@ from spacy.matcher import PhraseMatcher
 nlp = spacy.load("en_core_web_sm")
 
 
+SKILL_SYNONYMS = {
+    "js": "javascript",
+    "nodejs": "node",
+    "py": "python",
+    "nlp": "natural language processing",
+    "ml": "machine learning",
+    "dl": "deep learning",
+    "db": "databases",
+    "sql db": "sql",
+    "postgres": "postgresql"
+}
+
 JOB_TITLES = [
     "software engineer",
     "backend developer",
@@ -56,7 +68,13 @@ def extract_skills(text: str):
 
     found = set()
     for _, start, end in matches:
-        found.add(doc[start:end].text.lower())
+        skill = doc[start:end].text.lower()
+
+        # 🔑 Normalize skill if synonym exists
+        if skill in SKILL_SYNONYMS:
+            skill = SKILL_SYNONYMS[skill]
+
+        found.add(skill)
 
     return list(found)
 
