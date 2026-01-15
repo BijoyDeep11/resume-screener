@@ -134,7 +134,7 @@ if st.button("Analyze Match"):
                 st.subheader("🔍 Match Overview")
                 st.metric("Final Match Score", f"{final_score_result['final_match_percent']}%")
                 st.metric("TF-IDF Similarity", f"{tfidf_score}%")
-                st.metric("Semantic Similarity", f"{semantic_score}%")
+                st.metric("Semantic Similarity", f"{semantic_score:.2f}%")
 
                 st.subheader("✅ Matched Skills")
                 if skill_result["matched_skills"]:
@@ -156,8 +156,30 @@ if st.button("Analyze Match"):
                     st.write("Your resume already matches this role well!")
 
                 st.subheader("🧾 Extracted Profile")
-                for k, v in profile.items():
-                    st.write(f"**{k}**: {v}")
+
+                # ---- Skills ----
+                if profile["skills"]:
+                    st.write(f"**Skills**: {', '.join(profile['skills'])}")
+                else:
+                    st.write("**Skills**: Not mentioned")
+
+                # ---- Experience ----
+                if profile["experience_years"] > 0:
+                    st.write(f"**Experience**: {profile['experience_years']} years")
+                else:
+                    st.write("**Experience**: Fresher / Not mentioned")
+
+                # ---- Education ----
+                if profile["education"]:
+                    st.write(f"**Education**: {', '.join(profile['education']).upper()}")
+                else:
+                    st.write("**Education**: Not specified")
+
+                # ---- Job Titles ----
+                if profile["job_titles"]:
+                    st.write(f"**Job Titles**: {', '.join(profile['job_titles'])}")
+                else:
+                    st.write("**Job Titles**: Not specified in resume")
 
                 # -------------------------
                 # PDF Report

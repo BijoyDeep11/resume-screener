@@ -1,5 +1,10 @@
 from typing import Dict
-from nlp.skills import extract_skills, extract_experience_years, extract_degrees,  extract_job_titles
+from nlp.skills import (
+    extract_skills,
+    extract_experience_years,
+    extract_degrees,
+    extract_job_titles
+)
 
 
 def split_into_sections(text: str) -> Dict[str, str]:
@@ -51,7 +56,7 @@ def build_profile(sections: Dict[str, str]) -> Dict:
     """
 
     # Combine all text for global extraction
-    combined_text = " ".join(sections.values())
+    combined_text = " ".join(sections.values()).lower()
 
     skills = extract_skills(combined_text)
     exp_years = extract_experience_years(combined_text)
@@ -62,7 +67,7 @@ def build_profile(sections: Dict[str, str]) -> Dict:
         "skills": skills,
         "experience_years": exp_years,
         "education": degrees,
-        "job_titles": titles 
+        "job_titles": titles
     }
 
     return profile

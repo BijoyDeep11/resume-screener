@@ -108,11 +108,48 @@ def extract_degrees(text: str):
     return degrees
 
 def extract_job_titles(text: str):
-    found = set()
-    text_lower = text.lower()
+    """
+    Extracts probable job titles from resume text
+    using keyword + phrase matching.
+    """
 
-    for title in JOB_TITLES:
-        if title in text_lower:
+    text = text.lower()
+
+    COMMON_TITLES = [
+        "intern",
+        "trainee",
+        "developer",
+        "software developer",
+        "software engineer",
+        "backend developer",
+        "frontend developer",
+        "full stack developer",
+        "fullstack developer",
+        "data analyst",
+        "data scientist",
+        "ml engineer",
+        "ai engineer",
+        "campus ambassador",
+        "project lead",
+        "team lead",
+        "technical lead",
+        "engineering intern"
+    ]
+
+    found = set()
+
+    for title in COMMON_TITLES:
+        # exact phrase match
+        if title in text:
             found.add(title)
+
+    # Extra: regex for patterns like "worked as X"
+    pattern = r"(worked as|role:|position:)\s+([a-z\s]+)"
+    matches = re.findall(pattern, text)
+
+    for _, role in matches:
+        # keep only first 3 words to avoid garbage
+        role = " ".join(role.split()[:3])
+        found.add(role.strip())
 
     return list(found)
