@@ -1,0 +1,5 @@
+JOB TITLE: Machine Learning Intern LOCATION: Hybrid EXPERIENCE: Fresher
+
+RESPONSIBILITIES - Train ML models - Work with datasets
+
+REQUIRED SKILLS - Python - Scikit-learn - NumPy

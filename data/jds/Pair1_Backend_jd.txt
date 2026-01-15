@@ -1,0 +1,9 @@
+JOB TITLE: Junior Backend Developer LOCATION: Remote / India EXPERIENCE:
+0–2 years
+
+ABOUT THE ROLE Build scalable APIs and backend services.
+
+RESPONSIBILITIES - Develop REST APIs in Node.js - Work with MongoDB -
+Collaborate using Git
+
+REQUIRED SKILLS - JavaScript, Node.js, Express - REST, JSON - Git

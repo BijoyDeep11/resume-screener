@@ -1,0 +1,5 @@
+JOB TITLE: DevOps Engineer LOCATION: Remote EXPERIENCE: 2+ years
+
+RESPONSIBILITIES - Maintain CI/CD pipelines - Manage cloud infra
+
+REQUIRED SKILLS - Docker - AWS - GitHub Actions

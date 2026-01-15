@@ -1,0 +1,5 @@
+JOB TITLE: Full Stack Developer LOCATION: Remote EXPERIENCE: 1–2 years
+
+RESPONSIBILITIES - Build frontend and backend - Integrate APIs
+
+REQUIRED SKILLS - React - Node.js - MongoDB

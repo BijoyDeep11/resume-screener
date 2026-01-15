@@ -1,0 +1,5 @@
+JOB TITLE: Data Analyst Intern LOCATION: Onsite EXPERIENCE: Fresher
+
+RESPONSIBILITIES - Analyze datasets - Build dashboards
+
+REQUIRED SKILLS - Python - Pandas, Excel - SQL

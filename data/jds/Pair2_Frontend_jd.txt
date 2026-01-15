@@ -1,0 +1,6 @@
+JOB TITLE: Frontend Developer LOCATION: Hybrid EXPERIENCE: 1–3 years
+
+RESPONSIBILITIES - Build UI using React - Consume REST APIs - Write
+reusable components
+
+REQUIRED SKILLS - JavaScript, React - HTML, CSS
