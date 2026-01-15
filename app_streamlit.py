@@ -20,7 +20,7 @@ from recommendations.advisor import (
 from reports.pdf_generator import generate_pdf_report_bytes
 from utils.logger import log_time
 from utils.identity import extract_candidate_identity
-
+from utils.highlighter import find_skill_context
 
 
 # -------------------------
@@ -92,6 +92,14 @@ if st.button("Analyze Match"):
                 skill_result = calculate_match_score(profile, clean_jd)
 
                 # -------------------------
+                # Skill context in resume
+                # -------------------------
+                skill_context = find_skill_context(
+                    clean_resume,
+                    skill_result["matched_skills"]
+                )
+
+                # -------------------------
                 # Final weighted score
                 # -------------------------
                 required_exp = extract_required_experience(clean_jd)
@@ -152,11 +160,28 @@ if st.button("Analyze Match"):
                 st.metric("Semantic Similarity", f"{semantic_score:.2f}%")
 
                 # -------- Skills --------
+                # -------- Matched Skills --------
                 st.subheader("✅ Matched Skills")
                 if skill_result["matched_skills"]:
                     st.write(", ".join(skill_result["matched_skills"]))
                 else:
                     st.write("No matching skills found.")
+
+                # -------- Skill context --------
+                st.subheader("📍 Skill Hits in Context")
+
+                if skill_context:
+                    for snippet, data in skill_context.items():
+                        skills_list = ", ".join([s.title() for s in data["skills"]])
+                        st.markdown(f"**Skills found here:** {skills_list}")
+                        st.markdown(
+                            f"<div style='color:#e5e7eb; font-weight:500;'>{data['highlighted']}</div>",
+                            unsafe_allow_html=True
+                        )
+                else:
+                    st.write("No skill occurrences found in resume text.")
+
+
 
                 st.subheader("❌ Missing Skills")
                 if skill_result["missing_skills"]:
