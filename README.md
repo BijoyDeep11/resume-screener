@@ -18,33 +18,23 @@ The goal is not to replace human judgment, but to **support faster and more info
 At a high level, the system follows this flow:
 
 Resume(s) + Job Description
-↓
+        ↓
 Document Parsing (PDF / DOCX / OCR fallback)
-↓
+        ↓
 Text Cleaning & Normalization
-↓
-Section Detection (skills, experience, education)
-↓
-Entity Extraction (skills, years, degrees, titles)
-↓
-Skill Disambiguation (context-aware filtering)
-↓
-Similarity Computation
-
-TF-IDF + Cosine
-
-Semantic Embeddings (SBERT)
-↓
+        ↓
+Section Detection
+        ↓
+Entity Extraction
+        ↓
+Skill Disambiguation
+        ↓
+Similarity Computation (TF-IDF + SBERT)
+        ↓
 Weighted Scoring Engine
-↓
-Recommendations Generator
-↓
-Streamlit UI (ranking + detailed view)
-↓
-PDF Report (single resume mode)
+        ↓
+Recommendations + UI + PDF Report
 
-yaml
-Copy code
 
 The system supports:
 - **Multiple resumes** for recruiter-style ranking  
