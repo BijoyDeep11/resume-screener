@@ -17,24 +17,23 @@ The goal is not to replace human judgment, but to **support faster and more info
 
 At a high level, the system follows this flow:
 
-Resume(s) + Job Description
-        ↓
-Document Parsing (PDF / DOCX / OCR fallback)
-        ↓
-Text Cleaning & Normalization
-        ↓
-Section Detection
-        ↓
-Entity Extraction
-        ↓
-Skill Disambiguation
-        ↓
-Similarity Computation (TF-IDF + SBERT)
-        ↓
-Weighted Scoring Engine
-        ↓
+Resume(s) + Job Description  
+⬇️  
+Document Parsing (PDF / DOCX / OCR fallback)  
+⬇️  
+Text Cleaning & Normalization  
+⬇️  
+Section Detection  
+⬇️  
+Entity Extraction  
+⬇️  
+Skill Disambiguation  
+⬇️  
+Similarity Computation (TF-IDF + SBERT)  
+⬇️  
+Weighted Scoring Engine  
+⬇️  
 Recommendations + UI + PDF Report
-
 
 The system supports:
 - **Multiple resumes** for recruiter-style ranking  
