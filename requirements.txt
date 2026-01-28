@@ -1,5 +1,12 @@
 streamlit
-spacy
-sentence-transformers
 scikit-learn
+sentence-transformers
+pandas
+numpy
+spacy
+nltk
+PyPDF2
+python-docx
+pytesseract
 reportlab
+scipy
