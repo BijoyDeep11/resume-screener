@@ -1,10 +1,23 @@
 import re
-import spacy
-from spacy.matcher import PhraseMatcher
 
-nlp = spacy.load("en_core_web_sm")
+# -------------------------
+# Safe spaCy import
+# -------------------------
+try:
+    import spacy
+    from spacy.matcher import PhraseMatcher
+
+    nlp = spacy.load("en_core_web_sm")
+    SPACY_AVAILABLE = True
+except Exception:
+    SPACY_AVAILABLE = False
+    nlp = None
+    PhraseMatcher = None
 
 
+# -------------------------
+# Normalization
+# -------------------------
 SKILL_SYNONYMS = {
     "js": "javascript",
     "nodejs": "node",
@@ -17,24 +30,10 @@ SKILL_SYNONYMS = {
     "postgres": "postgresql"
 }
 
-JOB_TITLES = [
-    "software engineer",
-    "backend developer",
-    "frontend developer",
-    "full stack developer",
-    "data analyst",
-    "data scientist",
-    "machine learning engineer",
-    "ai engineer",
-    "web developer",
-    "intern",
-    "trainee",
-    "campus ambassador",
-    "project intern"
-]
 
-
-# A starter skill list (we'll grow this later)
+# -------------------------
+# Skill vocabulary
+# -------------------------
 SKILLS = [
     # Programming
     "python", "java", "c", "c++", "javascript",
@@ -57,43 +56,59 @@ SKILLS = [
 ]
 
 
-matcher = PhraseMatcher(nlp.vocab, attr="LOWER")
-patterns = [nlp(skill) for skill in SKILLS]
-matcher.add("SKILLS", patterns)
+# -------------------------
+# spaCy matcher (only if available)
+# -------------------------
+if SPACY_AVAILABLE:
+    matcher = PhraseMatcher(nlp.vocab, attr="LOWER")
+    patterns = [nlp(skill) for skill in SKILLS]
+    matcher.add("SKILLS", patterns)
+else:
+    matcher = None
 
 
+# -------------------------
+# Skill Extraction
+# -------------------------
 def extract_skills(text: str):
-    doc = nlp(text)
-    matches = matcher(doc)
-
+    text = text.lower()
     found = set()
-    for _, start, end in matches:
-        skill = doc[start:end].text.lower()
 
-        # 🔑 Normalize skill if synonym exists
-        if skill in SKILL_SYNONYMS:
-            skill = SKILL_SYNONYMS[skill]
+    # ---- spaCy-based extraction ----
+    if SPACY_AVAILABLE:
+        doc = nlp(text)
+        matches = matcher(doc)
 
-        found.add(skill)
+        for _, start, end in matches:
+            skill = doc[start:end].text.lower()
+            skill = SKILL_SYNONYMS.get(skill, skill)
+            found.add(skill)
+
+    # ---- Rule-based fallback ----
+    else:
+        for skill in SKILLS:
+            if skill in text:
+                normalized = SKILL_SYNONYMS.get(skill, skill)
+                found.add(normalized)
 
     return list(found)
 
 
+# -------------------------
+# Experience Extraction
+# -------------------------
 def extract_experience_years(text: str):
-    """
-    Looks for patterns like:
-    - 2 years
-    - 3+ years
-    - 1 year experience
-    """
-    matches = re.findall(r"(\d+)\+?\s+years?", text)
+    matches = re.findall(r"(\d+)\+?\s+years?", text.lower())
     if matches:
-        # return the max mentioned years
         return max(int(x) for x in matches)
     return 0
 
 
+# -------------------------
+# Degree Extraction
+# -------------------------
 def extract_degrees(text: str):
+    text = text.lower()
     degrees = []
 
     if "btech" in text or "b.tech" in text:
@@ -107,12 +122,11 @@ def extract_degrees(text: str):
 
     return degrees
 
-def extract_job_titles(text: str):
-    """
-    Extracts probable job titles from resume text
-    using keyword + phrase matching.
-    """
 
+# -------------------------
+# Job Title Extraction
+# -------------------------
+def extract_job_titles(text: str):
     text = text.lower()
 
     COMMON_TITLES = [
@@ -139,16 +153,14 @@ def extract_job_titles(text: str):
     found = set()
 
     for title in COMMON_TITLES:
-        # exact phrase match
         if title in text:
             found.add(title)
 
-    # Extra: regex for patterns like "worked as X"
+    # Regex-based fallback
     pattern = r"(worked as|role:|position:)\s+([a-z\s]+)"
     matches = re.findall(pattern, text)
 
     for _, role in matches:
-        # keep only first 3 words to avoid garbage
         role = " ".join(role.split()[:3])
         found.add(role.strip())
 
